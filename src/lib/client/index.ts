@@ -9,6 +9,7 @@ import { VersionsClient } from "./versions.js";
 import { MembershipsClient } from "./memberships.js";
 import { RolesClient } from "./roles.js";
 import { IssueCategoriesClient } from "./issue_categories.js";
+import { AttachmentsClient } from "./attachments.js";
 import { RedmineApiError } from "./base.js";
 
 /**
@@ -26,6 +27,7 @@ export class RedmineClient {
   public readonly memberships: MembershipsClient;
   public readonly roles: RolesClient;
   public readonly issueCategories: IssueCategoriesClient;
+  public readonly attachments: AttachmentsClient;
 
   constructor() {
     this.issues = new IssuesClient();
@@ -39,6 +41,7 @@ export class RedmineClient {
     this.memberships = new MembershipsClient();
     this.roles = new RolesClient();
     this.issueCategories = new IssueCategoriesClient();
+    this.attachments = new AttachmentsClient();
   }
 }
 

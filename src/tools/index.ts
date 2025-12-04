@@ -85,3 +85,12 @@ export {
   ISSUE_CATEGORY_UPDATE_TOOL,
   ISSUE_CATEGORY_DELETE_TOOL,
 } from "./issue_categories.js";
+
+// Attachment tools
+export {
+  ATTACHMENT_UPLOAD_TOOL,
+  ATTACHMENT_GET_TOOL,
+  ATTACHMENT_UPDATE_TOOL,
+  ATTACHMENT_DELETE_TOOL,
+  ATTACHMENT_DOWNLOAD_TOOL,
+} from "./attachments.js";
