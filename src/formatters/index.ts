@@ -61,3 +61,10 @@ export {
   formatIssueCategoryResult,
   formatIssueCategoryDeleted,
 } from "./issue_categories.js";
+
+export {
+  formatAttachment,
+  formatAttachments,
+  formatUploadResponse,
+  formatDownloadResponse,
+} from "./attachments.js";

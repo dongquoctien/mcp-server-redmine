@@ -21,6 +21,7 @@ import { createVersionsHandlers } from "./versions.js";
 import { createMembershipsHandlers } from "./memberships.js";
 import { createRolesHandlers } from "./roles.js";
 import { createIssueCategoriesHandlers } from "./issue_categories.js";
+import { createAttachmentsHandlers } from "./attachments.js";
 import { formatAllowedStatuses } from "../formatters/projects.js";
 
 // Create handler context
@@ -47,6 +48,7 @@ const versionsHandlers = createVersionsHandlers(context);
 const membershipsHandlers = createMembershipsHandlers(context);
 const rolesHandlers = createRolesHandlers(context);
 const issueCategoriesHandlers = createIssueCategoriesHandlers(context);
+const attachmentsHandlers = createAttachmentsHandlers(context);
 
 // Create handler map
 const handlers = {
@@ -61,6 +63,7 @@ const handlers = {
   ...membershipsHandlers,
   ...rolesHandlers,
   ...issueCategoriesHandlers,
+  ...attachmentsHandlers,
 };
 
 // Initialize server

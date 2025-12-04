@@ -13,3 +13,4 @@ export * from "./versions/index.js";
 export * from "./memberships/index.js";
 export * from "./roles/index.js";
 export * from "./issue_categories/index.js";
+export * from "./attachments/index.js";
