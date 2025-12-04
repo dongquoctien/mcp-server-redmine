@@ -118,3 +118,29 @@ export const ATTACHMENT_DOWNLOAD_TOOL: Tool = {
     required: ["id"],
   },
 };
+
+/**
+ * Upload a file from local filesystem path
+ */
+export const ATTACHMENT_UPLOAD_FROM_PATH_TOOL: Tool = {
+  name: "upload_file_from_path",
+  description:
+    "Upload a file from local file system path to Redmine. " +
+    "Returns an upload token that can be used to attach the file to an issue. " +
+    "Use the returned token with create_issue or update_issue to attach the file. " +
+    "Available since Redmine 1.4",
+  inputSchema: {
+    type: "object",
+    properties: {
+      file_path: {
+        type: "string",
+        description: "Absolute path to the file on local file system (e.g., 'C:\\Users\\name\\screenshot.png' or '/home/user/document.pdf')",
+      },
+      filename: {
+        type: "string",
+        description: "Optional: Override the filename for the attachment (default: use original filename from path)",
+      },
+    },
+    required: ["file_path"],
+  },
+};

@@ -5,6 +5,8 @@ import {
   ValidationError,
 } from "./types.js";
 import * as formatters from "../formatters/index.js";
+import { readFile } from "fs/promises";
+import { basename } from "path";
 
 /**
  * Creates handlers for attachment-related operations
@@ -238,6 +240,73 @@ export function createAttachmentsHandlers(context: HandlerContext) {
           isError: false,
         };
       } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: error instanceof Error ? error.message : String(error),
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+
+    /**
+     * Upload a file from local filesystem path
+     * Reads the file, converts to base64, and uploads to Redmine
+     */
+    upload_file_from_path: async (args: unknown): Promise<ToolResponse> => {
+      try {
+        if (typeof args !== "object" || args === null) {
+          throw new ValidationError("Arguments must be an object");
+        }
+
+        const argsObj = args as Record<string, unknown>;
+
+        if (!("file_path" in argsObj)) {
+          throw new ValidationError("file_path is required");
+        }
+
+        const filePath = String(argsObj.file_path);
+
+        // Use provided filename or extract from path
+        const filename = "filename" in argsObj
+          ? String(argsObj.filename)
+          : basename(filePath);
+
+        // Read file from filesystem
+        const fileBuffer = await readFile(filePath);
+
+        // Upload to Redmine
+        const response = await client.attachments.uploadFile(
+          filename,
+          fileBuffer
+        );
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: formatters.formatUploadResponse(response, filename),
+            },
+          ],
+          isError: false,
+        };
+      } catch (error) {
+        // Handle file not found error specifically
+        if (error instanceof Error && 'code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `File not found: ${(error as NodeJS.ErrnoException).path || 'unknown path'}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
         return {
           content: [
             {
