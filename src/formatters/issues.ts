@@ -31,6 +31,37 @@ function formatCustomFields(fields: Array<{ id: number; name: string; value: str
 }
 
 /**
+ * Format attachments
+ */
+function formatAttachments(attachments: Array<{
+  id: number;
+  filename: string;
+  filesize: number;
+  content_type: string;
+  description?: string;
+  content_url: string;
+  thumbnail_url?: string;
+  author: { id: number; name: string };
+  created_on: string;
+}>) {
+  return `
+  <attachments>
+    ${attachments.map(attachment => `
+    <attachment>
+      <id>${attachment.id}</id>
+      <filename>${escapeXml(attachment.filename)}</filename>
+      <filesize>${attachment.filesize}</filesize>
+      <content_type>${escapeXml(attachment.content_type)}</content_type>
+      ${attachment.description ? `<description>${escapeXml(attachment.description)}</description>` : ''}
+      <content_url>${escapeXml(attachment.content_url)}</content_url>
+      ${attachment.thumbnail_url ? `<thumbnail_url>${escapeXml(attachment.thumbnail_url)}</thumbnail_url>` : ''}
+      <author>${escapeXml(attachment.author.name)}</author>
+      <created_on>${attachment.created_on}</created_on>
+    </attachment>`).join('')}
+  </attachments>`;
+}
+
+/**
  * Format journal entries (comments and history)
  */
 function formatJournals(journals: Array<{
@@ -89,6 +120,7 @@ export function formatIssue(issue: RedmineIssue): string {
   ${issue.spent_hours !== undefined ? `<spent_hours>${issue.spent_hours}</spent_hours>` : ''}
   ${safeDescription ? `<description>${safeDescription}</description>` : ''}
   ${issue.custom_fields?.length ? formatCustomFields(issue.custom_fields) : ''}
+  ${issue.attachments?.length ? formatAttachments(issue.attachments) : ''}
   ${issue.journals?.length ? formatJournals(issue.journals) : ''}
   ${issue.created_on ? `<created_on>${issue.created_on}</created_on>` : ''}
   ${issue.updated_on ? `<updated_on>${issue.updated_on}</updated_on>` : ''}

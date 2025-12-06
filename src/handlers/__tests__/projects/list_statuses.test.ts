@@ -1,8 +1,18 @@
 import { jest, expect, describe, it, beforeEach } from '@jest/globals';
 import type { Mock } from 'jest-mock';
 import { createProjectsHandlers } from '../../projects.js';
-import { HandlerContext } from '../../types.js';
+import { HandlerContext, TextContent, ImageContent } from '../../types.js';
 import { RedmineIssue } from '../../../lib/types/issues/types.js';
+
+/**
+ * Helper to get text from content (handles union type)
+ */
+function getTextFromContent(content: TextContent | ImageContent): string {
+  if (content.type === "text") {
+    return content.text;
+  }
+  return "";
+}
 
 describe('list_project_statuses', () => {
   let projectsHandlers: ReturnType<typeof createProjectsHandlers>;
@@ -177,28 +187,28 @@ describe('list_project_statuses', () => {
     const mockArgs = { tracker_id: 1 }; // project_id is missing
     const result = await projectsHandlers.list_project_statuses(mockArgs);
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain('Input Error: project_id is required and must be a number.');
+    expect(getTextFromContent(result.content[0])).toContain('Input Error: project_id is required and must be a number.');
   });
 
   it('should return ValidationError if project_id is not a number', async () => {
     const mockArgs = { project_id: 'abc', tracker_id: 1 };
     const result = await projectsHandlers.list_project_statuses(mockArgs);
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain('Input Error: project_id is required and must be a number.');
+    expect(getTextFromContent(result.content[0])).toContain('Input Error: project_id is required and must be a number.');
   });
 
   it('should return ValidationError if tracker_id is missing', async () => {
     const mockArgs = { project_id: 1 }; // tracker_id is missing
     const result = await projectsHandlers.list_project_statuses(mockArgs);
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain('Input Error: tracker_id is required and must be a number.');
+    expect(getTextFromContent(result.content[0])).toContain('Input Error: tracker_id is required and must be a number.');
   });
 
   it('should return ValidationError if tracker_id is not a number', async () => {
     const mockArgs = { project_id: 1, tracker_id: 'xyz' };
     const result = await projectsHandlers.list_project_statuses(mockArgs);
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain('Input Error: tracker_id is required and must be a number.');
+    expect(getTextFromContent(result.content[0])).toContain('Input Error: tracker_id is required and must be a number.');
   });
 
   // --- Abnormal Cases (API Errors) ---

@@ -203,6 +203,7 @@ export function createAttachmentsHandlers(context: HandlerContext) {
 
     /**
      * Download an attachment file content
+     * For images, returns both viewable image and metadata
      */
     download_attachment: async (args: unknown): Promise<ToolResponse> => {
       try {
@@ -230,6 +231,37 @@ export function createAttachmentsHandlers(context: HandlerContext) {
         // Convert to base64
         const base64Content = fileContent.toString("base64");
 
+        // Check if the attachment is an image type that can be displayed
+        const imageTypes = [
+          "image/png",
+          "image/jpeg",
+          "image/jpg",
+          "image/gif",
+          "image/webp",
+          "image/bmp",
+        ];
+        const contentType = attachment.content_type.toLowerCase();
+        const isImage = imageTypes.includes(contentType);
+
+        if (isImage) {
+          // For images, return both the image content (for viewing) and metadata
+          return {
+            content: [
+              {
+                type: "image",
+                data: base64Content,
+                mimeType: attachment.content_type,
+              },
+              {
+                type: "text",
+                text: formatters.formatDownloadResponse(attachment, "[Image data included above]"),
+              },
+            ],
+            isError: false,
+          };
+        }
+
+        // For non-image files, return only text with base64 data
         return {
           content: [
             {

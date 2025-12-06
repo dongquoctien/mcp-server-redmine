@@ -105,7 +105,8 @@ export const ATTACHMENT_DOWNLOAD_TOOL: Tool = {
   name: "download_attachment",
   description:
     "Download an attachment file content. " +
-    "Returns the file content as base64 encoded string. " +
+    "For image files (PNG, JPG, GIF, WebP, BMP), returns the image in a format that can be directly viewed by Claude. " +
+    "For other files, returns the file content as base64 encoded string. " +
     "Available since Redmine 1.3",
   inputSchema: {
     type: "object",
