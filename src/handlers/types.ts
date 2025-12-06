@@ -12,13 +12,27 @@ export interface Logger {
 }
 
 /**
+ * Text content for tool response
+ */
+export type TextContent = {
+  type: "text";
+  text: string;
+};
+
+/**
+ * Image content for tool response (supported by MCP SDK)
+ */
+export type ImageContent = {
+  type: "image";
+  data: string;      // base64-encoded image data
+  mimeType: string;  // MIME type (e.g., "image/png", "image/jpeg")
+};
+
+/**
  * Response content type for each tool
  */
 export type ToolResponse = {
-  content: Array<{
-    type: string;
-    text: string;
-  }>;
+  content: Array<TextContent | ImageContent>;
   isError: boolean;
 };
 

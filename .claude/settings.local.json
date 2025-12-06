@@ -8,7 +8,8 @@
       "WebSearch",
       "Bash(dir:*)",
       "Bash(findstr:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(npm ls:*)"
     ],
     "deny": [],
     "ask": []

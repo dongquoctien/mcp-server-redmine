@@ -1,8 +1,8 @@
 import { jest, expect, describe, it, beforeEach } from '@jest/globals';
 import type { Mock } from 'jest-mock';
 import { RedmineClient } from "../../../lib/client/index.js";
-import { 
-  mockResponse, 
+import {
+  mockResponse,
   mockErrorResponse,
   mockNetworkError
 } from "../../../lib/__tests__/helpers/mocks.js";
@@ -12,6 +12,17 @@ import { createIssuesHandlers } from "../../issues.js";
 import { assertMcpToolResponse } from "../../../lib/__tests__/helpers/mcp.js";
 import config from "../../../lib/config.js";
 import type { IssueListParams } from "../../../lib/types/issues/types.js";
+import type { TextContent, ImageContent } from "../../types.js";
+
+/**
+ * Helper to get text from content (handles union type)
+ */
+function getTextFromContent(content: TextContent | ImageContent): string {
+  if (content.type === "text") {
+    return content.text;
+  }
+  return "";
+}
 
 describe('list_issues', () => {
   let client: RedmineClient;
@@ -55,13 +66,13 @@ describe('list_issues', () => {
 
     it('validates XML structure in response', async () => {
       // Arrange
-      mockFetch.mockImplementationOnce(() => 
+      mockFetch.mockImplementationOnce(() =>
         mockResponse(fixtures.issueListResponse)
       );
 
       // Act
       const response = await handlers.list_issues({});
-      const xml = response.content[0].text;
+      const xml = getTextFromContent(response.content[0]);
 
       // Assert
       expect(xml).toMatch(/<issues.*?>/);
@@ -167,7 +178,7 @@ describe('list_issues', () => {
 
     it('handles invalid parameters correctly', async () => {
       // Arrange
-      mockFetch.mockImplementationOnce(() => 
+      mockFetch.mockImplementationOnce(() =>
         mockResponse(fixtures.issueListResponse)
       );
 
@@ -180,14 +191,14 @@ describe('list_issues', () => {
       // Assert
       assertMcpToolResponse(response);
       expect(response.isError).toBe(true);
-      expect(response.content[0].text).toMatch(/invalid.*(offset|limit)/i);
+      expect(getTextFromContent(response.content[0])).toMatch(/invalid.*(offset|limit)/i);
     });
   });
 
   describe('Response Content', () => {
     it('includes all required issue fields in XML', async () => {
       // Arrange
-      mockFetch.mockImplementationOnce(() => 
+      mockFetch.mockImplementationOnce(() =>
         mockResponse(fixtures.issueListResponse)
       );
 
@@ -196,8 +207,8 @@ describe('list_issues', () => {
 
       // Assert
       assertMcpToolResponse(response);
-      const xml = response.content[0].text;
-      
+      const xml = getTextFromContent(response.content[0]);
+
       // 必須フィールドの存在確認
       expect(xml).toMatch(/<id>\d+<\/id>/);
       expect(xml).toMatch(/<subject>.+<\/subject>/);
@@ -208,7 +219,7 @@ describe('list_issues', () => {
 
     it('handles empty result set correctly', async () => {
       // Arrange
-      mockFetch.mockImplementationOnce(() => 
+      mockFetch.mockImplementationOnce(() =>
         mockResponse({
           issues: [],
           total_count: 0,
@@ -222,7 +233,7 @@ describe('list_issues', () => {
 
       // Assert
       assertMcpToolResponse(response);
-      const xml = response.content[0].text;
+      const xml = getTextFromContent(response.content[0]);
       expect(xml).toMatch(/^<\?xml/);
       expect(xml).toMatch(/type="array"/);
       expect(xml).toMatch(/total_count="0"/);
@@ -240,7 +251,7 @@ describe('list_issues', () => {
         }]
       };
 
-      mockFetch.mockImplementationOnce(() => 
+      mockFetch.mockImplementationOnce(() =>
         mockResponse(issueWithSpecialChars)
       );
 
@@ -249,7 +260,7 @@ describe('list_issues', () => {
 
       // Assert
       assertMcpToolResponse(response);
-      const xml = response.content[0].text;
+      const xml = getTextFromContent(response.content[0]);
       expect(xml).toMatch(/&amp;/);
       expect(xml).toMatch(/&lt;/);
       expect(xml).toMatch(/&gt;/);
@@ -261,7 +272,7 @@ describe('list_issues', () => {
   describe('Error Handling', () => {
     it('handles network errors correctly', async () => {
       // Arrange
-      mockFetch.mockImplementationOnce(() => 
+      mockFetch.mockImplementationOnce(() =>
         mockNetworkError("Network error")
       );
 
@@ -271,12 +282,12 @@ describe('list_issues', () => {
       // Assert
       assertMcpToolResponse(response);
       expect(response.isError).toBe(true);
-      expect(response.content[0].text).toMatch(/network error/i);
+      expect(getTextFromContent(response.content[0])).toMatch(/network error/i);
     });
 
     it('handles API errors correctly', async () => {
       // Arrange
-      mockFetch.mockImplementationOnce(() => 
+      mockFetch.mockImplementationOnce(() =>
         mockErrorResponse(500, ["Internal server error"])
       );
 
@@ -286,12 +297,12 @@ describe('list_issues', () => {
       // Assert
       assertMcpToolResponse(response);
       expect(response.isError).toBe(true);
-      expect(response.content[0].text).toMatch(/internal server error/i);
+      expect(getTextFromContent(response.content[0])).toMatch(/internal server error/i);
     });
 
     it('handles rate limiting correctly', async () => {
       // Arrange
-      mockFetch.mockImplementationOnce(() => 
+      mockFetch.mockImplementationOnce(() =>
         mockErrorResponse(429, ["Too many requests"])
       );
 
@@ -301,7 +312,7 @@ describe('list_issues', () => {
       // Assert
       assertMcpToolResponse(response);
       expect(response.isError).toBe(true);
-      expect(response.content[0].text).toMatch(/too many requests/i);
+      expect(getTextFromContent(response.content[0])).toMatch(/too many requests/i);
     });
   });
 });

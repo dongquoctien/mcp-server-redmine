@@ -7,12 +7,14 @@ import config from "../../../lib/config.js";
 import { parseUrl } from "../../../lib/__tests__/helpers/url.js";
 import { createIssuesHandlers } from "../../issues.js";
 import { IssueListParams } from "../../../lib/types/index.js";
-import type { ToolResponse } from "../../../handlers/types.js";
+import type { ToolResponse, TextContent, ImageContent } from "../../../handlers/types.js";
 
-type ToolResponseContent = {
-  type: string;
-  text: string;
-};
+/**
+ * Type guard to check if content is TextContent
+ */
+function isTextContent(content: TextContent | ImageContent): content is TextContent {
+  return content.type === "text";
+}
 
 const assertMcpResponse = (response: ToolResponse) => {
   // Validate structure
@@ -25,13 +27,21 @@ const assertMcpResponse = (response: ToolResponse) => {
   expect(response.content.length).toBeGreaterThan(0);
 
   // Each content item must comply with MCP protocol
-  response.content.forEach((item: ToolResponseContent) => {
-    expect(item).toEqual({
-      type: "text",  // MCPプロトコルに準拠した"text"
-      text: expect.any(String)
-    });
-    // Text must not be empty
-    expect(item.text.length).toBeGreaterThan(0);
+  response.content.forEach((item) => {
+    if (isTextContent(item)) {
+      expect(item).toEqual({
+        type: "text",
+        text: expect.any(String)
+      });
+      // Text must not be empty
+      expect(item.text.length).toBeGreaterThan(0);
+    } else {
+      expect(item).toEqual({
+        type: "image",
+        data: expect.any(String),
+        mimeType: expect.any(String)
+      });
+    }
   });
 };
 
@@ -75,8 +85,11 @@ describe("Issues Handler (GET) - MCP Response", () => {
       // Assert
       assertMcpResponse(response);
       expect(response.isError).toBe(false);
-      expect(response.content[0].type).toBe("text");  // MCPプロトコルに準拠した"text"
-      expect(response.content[0].text).toContain(fixtures.issueListResponse.issues[0].subject);
+      const firstContent = response.content[0];
+      expect(firstContent.type).toBe("text");
+      if (isTextContent(firstContent)) {
+        expect(firstContent.text).toContain(fixtures.issueListResponse.issues[0].subject);
+      }
     });
 
     describe("filtering", () => {
@@ -119,8 +132,11 @@ describe("Issues Handler (GET) - MCP Response", () => {
       // Assert
       assertMcpResponse(response);
       expect(response.isError).toBe(true);
-      expect(response.content[0].type).toBe("text");  // MCPプロトコルに準拠した"text"
-      expect(response.content[0].text).toContain("Invalid query parameters");
+      const firstContent = response.content[0];
+      expect(firstContent.type).toBe("text");
+      if (isTextContent(firstContent)) {
+        expect(firstContent.text).toContain("Invalid query parameters");
+      }
     });
 
     it("returns valid MCP error response for invalid parameters", async () => {
@@ -135,8 +151,11 @@ describe("Issues Handler (GET) - MCP Response", () => {
       // Assert
       assertMcpResponse(response);
       expect(response.isError).toBe(true);
-      expect(response.content[0].type).toBe("text");  // MCPプロトコルに準拠した"text"
-      expect(response.content[0].text).toMatch(/limit|invalid/i);
+      const firstContent = response.content[0];
+      expect(firstContent.type).toBe("text");
+      if (isTextContent(firstContent)) {
+        expect(firstContent.text).toMatch(/limit|invalid/i);
+      }
     });
   });
 });
