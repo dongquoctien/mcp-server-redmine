@@ -7,6 +7,12 @@ import {
 import * as formatters from "../formatters/index.js";
 import { readFile } from "fs/promises";
 import { basename } from "path";
+import {
+  parseExcelToJson,
+  isExcelContentType,
+  isExcelFilename,
+  formatParsedExcel,
+} from "../lib/parsers/index.js";
 
 /**
  * Creates handlers for attachment-related operations
@@ -203,7 +209,8 @@ export function createAttachmentsHandlers(context: HandlerContext) {
 
     /**
      * Download an attachment file content
-     * For images, returns both viewable image and metadata
+     * For images, returns viewable image and metadata
+     * For Excel files, parses and returns JSON data
      */
     download_attachment: async (args: unknown): Promise<ToolResponse> => {
       try {
@@ -228,6 +235,47 @@ export function createAttachmentsHandlers(context: HandlerContext) {
           attachment
         );
 
+        const contentType = attachment.content_type.toLowerCase();
+
+        // Check if the attachment is an Excel file
+        const isExcel =
+          isExcelContentType(contentType) ||
+          isExcelFilename(attachment.filename);
+
+        if (isExcel) {
+          // Parse Excel file to JSON
+          try {
+            const parsedExcel = parseExcelToJson(fileContent);
+            const formattedExcel = formatParsedExcel(parsedExcel);
+
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `Attachment #${id}: ${attachment.filename}\n` +
+                    `File size: ${attachment.filesize} bytes\n` +
+                    `Content type: ${attachment.content_type}\n\n` +
+                    `--- Parsed Excel Content ---\n${formattedExcel}`,
+                },
+              ],
+              isError: false,
+            };
+          } catch (parseError) {
+            // If Excel parsing fails, fall back to base64
+            const base64Content = fileContent.toString("base64");
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: formatters.formatDownloadResponse(attachment, base64Content) +
+                    `\n\nNote: Excel parsing failed: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
+                },
+              ],
+              isError: false,
+            };
+          }
+        }
+
         // Convert to base64
         const base64Content = fileContent.toString("base64");
 
@@ -240,7 +288,6 @@ export function createAttachmentsHandlers(context: HandlerContext) {
           "image/webp",
           "image/bmp",
         ];
-        const contentType = attachment.content_type.toLowerCase();
         const isImage = imageTypes.includes(contentType);
 
         if (isImage) {

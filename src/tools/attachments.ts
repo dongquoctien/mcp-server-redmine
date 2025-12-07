@@ -106,6 +106,7 @@ export const ATTACHMENT_DOWNLOAD_TOOL: Tool = {
   description:
     "Download an attachment file content. " +
     "For image files (PNG, JPG, GIF, WebP, BMP), returns the image in a format that can be directly viewed by Claude. " +
+    "For Excel files (.xlsx, .xls), parses and returns JSON data with all sheets and rows. " +
     "For other files, returns the file content as base64 encoded string. " +
     "Available since Redmine 1.3",
   inputSchema: {
