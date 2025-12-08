@@ -184,6 +184,34 @@ export const ISSUE_CREATE_TOOL: Tool = {
         description: "Issue due date as YYYY-MM-DD",
         pattern: "^\\d{4}-\\d{2}-\\d{2}$",
       },
+      uploads: {
+        type: "array",
+        description:
+          "List of file attachments. Get tokens from upload_file or upload_file_from_path first. " +
+          "Image files will be automatically embedded at the end of description using !filename! syntax",
+        items: {
+          type: "object",
+          properties: {
+            token: {
+              type: "string",
+              description: "Upload token from upload_file response",
+            },
+            filename: {
+              type: "string",
+              description: "Filename for the attachment",
+            },
+            content_type: {
+              type: "string",
+              description: "MIME type (e.g., 'image/png', 'application/pdf')",
+            },
+            description: {
+              type: "string",
+              description: "Optional description for the attachment",
+            },
+          },
+          required: ["token", "filename"],
+        },
+      },
     },
     required: ["project_id", "subject"],
   },
@@ -287,6 +315,34 @@ export const ISSUE_UPDATE_TOOL: Tool = {
         type: "string",
         description: "Change due date as YYYY-MM-DD",
         pattern: "^\\d{4}-\\d{2}-\\d{2}$",
+      },
+      uploads: {
+        type: "array",
+        description:
+          "List of file attachments. Get tokens from upload_file or upload_file_from_path first. " +
+          "Image files will be automatically embedded in notes using !filename! syntax",
+        items: {
+          type: "object",
+          properties: {
+            token: {
+              type: "string",
+              description: "Upload token from upload_file response",
+            },
+            filename: {
+              type: "string",
+              description: "Filename for the attachment",
+            },
+            content_type: {
+              type: "string",
+              description: "MIME type (e.g., 'image/png', 'application/pdf')",
+            },
+            description: {
+              type: "string",
+              description: "Optional description for the attachment",
+            },
+          },
+          required: ["token", "filename"],
+        },
       },
     },
     required: ["id"],
