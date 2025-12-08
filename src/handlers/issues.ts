@@ -9,8 +9,41 @@ import * as formatters from "../formatters/index.js";
 import type {
   RedmineIssueCreate,
   RedmineIssueUpdate,
+  RedmineIssueUpload,
   IssueListParams,
 } from "../lib/types/index.js";
+
+/**
+ * Image file extensions that can be embedded in Redmine textile
+ */
+const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.svg'];
+
+/**
+ * Check if a filename is an image based on extension
+ */
+function isImageFile(filename: string): boolean {
+  const ext = filename.toLowerCase().substring(filename.lastIndexOf('.'));
+  return IMAGE_EXTENSIONS.includes(ext);
+}
+
+/**
+ * Generate textile syntax to embed images at the end of text
+ * @param text Original description or notes text
+ * @param uploads Array of uploads to check for images
+ * @returns Text with image embeds appended
+ */
+function appendImageEmbeds(text: string | undefined, uploads: RedmineIssueUpload[]): string {
+  const imageFilenames = uploads
+    .filter(u => isImageFile(u.filename))
+    .map(u => `!${u.filename}!`);
+
+  if (imageFilenames.length === 0) {
+    return text || '';
+  }
+
+  const imageSection = '\n\n' + imageFilenames.join('\n');
+  return (text || '') + imageSection;
+}
 // import {
 //   ISSUE_LIST_TOOL, 
 //   ISSUE_CREATE_TOOL, 
@@ -203,6 +236,16 @@ export function createIssuesHandlers(context: HandlerContext) {
         if ('start_date' in argsObj) params.start_date = String(argsObj.start_date);
         if ('due_date' in argsObj) params.due_date = String(argsObj.due_date);
 
+        // Handle uploads (attachments)
+        if ('uploads' in argsObj && Array.isArray(argsObj.uploads)) {
+          params.uploads = argsObj.uploads as RedmineIssueUpload[];
+
+          // Auto-embed images in description
+          if (params.uploads.length > 0) {
+            params.description = appendImageEmbeds(params.description, params.uploads);
+          }
+        }
+
         const response = await client.issues.createIssue(params);
         
         return {
@@ -267,6 +310,16 @@ export function createIssuesHandlers(context: HandlerContext) {
         if ('estimated_hours' in argsObj) updateParams.estimated_hours = asNumber(argsObj.estimated_hours);
         if ('start_date' in argsObj) updateParams.start_date = String(argsObj.start_date);
         if ('due_date' in argsObj) updateParams.due_date = String(argsObj.due_date);
+
+        // Handle uploads (attachments)
+        if ('uploads' in argsObj && Array.isArray(argsObj.uploads)) {
+          updateParams.uploads = argsObj.uploads as RedmineIssueUpload[];
+
+          // Auto-embed images in notes (for update, we append to notes instead of description)
+          if (updateParams.uploads.length > 0) {
+            updateParams.notes = appendImageEmbeds(updateParams.notes, updateParams.uploads);
+          }
+        }
 
         // Validate that at least one field is being updated (besides id)
         const hasUpdateFields = Object.keys(updateParams).length > 0;

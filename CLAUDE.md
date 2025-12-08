@@ -5,23 +5,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build and Development Commands
 
 ```bash
-# Install dependencies
-npm install
+npm install          # Install dependencies
+npm run build        # Build TypeScript to dist/
+npm run dev          # Run in development mode (with watch)
+npm start            # Start production server
+npm test             # Run tests
+npm run lint         # Run linting
+```
 
-# Build TypeScript to dist/
+### Running a Single Test
+
+```bash
+# Run tests matching a pattern
+npm test -- --testPathPattern="issues/get"
+
+# Run a specific test file
+npm test -- src/lib/__tests__/client/issues/get.test.ts
+```
+
+### Inspector Testing
+
+```bash
+# Build and test with MCP Inspector
 npm run build
-
-# Run in development mode (with watch)
-npm run dev
-
-# Start production server
-npm start
-
-# Run tests
-npm test
-
-# Run linting
-npm run lint
+npx @modelcontextprotocol/inspector dist/index.js
 ```
 
 ## Environment Variables
@@ -37,18 +44,18 @@ This is an MCP (Model Context Protocol) server that integrates with Redmine's RE
 ### Core Flow
 
 1. **Entry Point** (`src/index.ts`): Bootstraps the server via `runServer()`
-2. **Server Setup** (`src/handlers/index.ts`): Creates the MCP server, registers all tools, and handles tool execution routing
-3. **Tool Execution**: Incoming tool calls are routed through a handler map to resource-specific handlers
+2. **Server Setup** (`src/handlers/index.ts`): Creates the MCP server, registers all tools via dynamic discovery from `tools/index.ts`, and routes tool execution to resource-specific handlers
+3. **Tool Execution**: Incoming tool calls are matched against a handler map built from all `create*Handlers()` functions
 
 ### Module Structure
 
-**Tools** (`src/tools/`): Define MCP tool schemas with names, descriptions, and input validation. Each file exports `*_TOOL` constants (e.g., `ISSUE_LIST_TOOL`, `PROJECT_CREATE_TOOL`). Tools are automatically discovered and registered.
+**Tools** (`src/tools/`): Define MCP tool schemas with names, descriptions, and input validation. Each file exports `*_TOOL` constants (e.g., `ISSUE_LIST_TOOL`, `PROJECT_CREATE_TOOL`). Tools are automatically discovered from `tools/index.ts` exports.
 
 **Handlers** (`src/handlers/`): Implement tool logic. Each resource has a `create*Handlers()` function that returns an object mapping tool names to handler functions. Handlers receive a `HandlerContext` with the Redmine client, config, and logger.
 
 **Client** (`src/lib/client/`): Wraps Redmine REST API calls. `BaseClient` provides `performRequest()` for HTTP operations and `encodeQueryParams()` for query string building. Resource-specific clients extend `BaseClient`.
 
-**Types** (`src/lib/types/`): TypeScript types and Zod schemas for each resource domain (issues, projects, time_entries, users). Each has:
+**Types** (`src/lib/types/`): TypeScript types and Zod schemas for each resource domain. Each domain has:
 - `types.ts`: TypeScript interfaces
 - `schema.ts`: Zod validation schemas
 - `index.ts`: Re-exports
@@ -61,9 +68,14 @@ This is an MCP (Model Context Protocol) server that integrates with Redmine's RE
 
 1. Add tool definition in `src/tools/<resource>.ts` (export `*_TOOL` constant)
 2. Add export in `src/tools/index.ts`
-3. Implement handler in `src/handlers/<resource>.ts`
-4. If new resource: create client in `src/lib/client/`, types in `src/lib/types/`, formatter in `src/formatters/`
+3. Implement handler in `src/handlers/<resource>.ts` (create `create*Handlers()` function)
+4. Register handler in `src/handlers/index.ts` (import, create, and spread into `handlers` object)
+5. If new resource: create client in `src/lib/client/`, types in `src/lib/types/`, formatter in `src/formatters/`
 
 ### Testing
 
-Tests use Jest with `node-fetch` mocks. Test files are located in `__tests__/` directories adjacent to the code they test. Only GET operations are included in tests for data safety.
+Tests use Jest with ESM support and mock `fetch` calls. Test files are in `__tests__/` directories adjacent to the code they test.
+
+- Test helpers are in `src/lib/__tests__/helpers/` (fixtures, mocks, setup)
+- Use `mockResponse()` and `mockErrorResponse()` from helpers for fetch mocking
+- Test pattern: Arrange (setup mocks) → Act (call method) → Assert (verify calls and results)
