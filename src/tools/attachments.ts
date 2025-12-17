@@ -146,3 +146,26 @@ export const ATTACHMENT_UPLOAD_FROM_PATH_TOOL: Tool = {
     required: ["file_path"],
   },
 };
+
+/**
+ * Upload an image from system clipboard
+ */
+export const ATTACHMENT_UPLOAD_FROM_CLIPBOARD_TOOL: Tool = {
+  name: "upload_file_from_clipboard",
+  description:
+    "Upload an image from the system clipboard to Redmine (Windows only). " +
+    "Reads the current clipboard image, saves it temporarily, and uploads to Redmine. " +
+    "Returns an upload token that can be used to attach the file to an issue. " +
+    "Use the returned token with create_issue or update_issue to attach the file. " +
+    "Available since Redmine 1.4",
+  inputSchema: {
+    type: "object",
+    properties: {
+      filename: {
+        type: "string",
+        description: "Optional: Custom filename for the uploaded image (default: 'clipboard-image-{timestamp}.png')",
+      },
+    },
+    required: [],
+  },
+};
