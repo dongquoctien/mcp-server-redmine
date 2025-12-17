@@ -5,8 +5,10 @@ import {
   ValidationError,
 } from "./types.js";
 import * as formatters from "../formatters/index.js";
-import { readFile } from "fs/promises";
-import { basename } from "path";
+import { readFile, unlink } from "fs/promises";
+import { basename, join } from "path";
+import { tmpdir } from "os";
+import { exec } from "child_process";
 import {
   parseExcelToJson,
   isExcelContentType,
@@ -384,6 +386,134 @@ export function createAttachmentsHandlers(context: HandlerContext) {
             ],
             isError: true,
           };
+        }
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: error instanceof Error ? error.message : String(error),
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+
+    /**
+     * Upload an image from system clipboard (Windows only)
+     * Uses PowerShell to read clipboard, save to temp file, then upload to Redmine
+     */
+    upload_file_from_clipboard: async (args: unknown): Promise<ToolResponse> => {
+      // Check if running on Windows
+      if (process.platform !== "win32") {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "upload_file_from_clipboard is currently only supported on Windows",
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const timestamp = Date.now();
+      const tempFilePath = join(tmpdir(), `clipboard-image-${timestamp}.png`);
+
+      try {
+        const argsObj = (typeof args === "object" && args !== null)
+          ? args as Record<string, unknown>
+          : {};
+
+        // Use provided filename or generate default
+        const filename = "filename" in argsObj
+          ? String(argsObj.filename)
+          : `clipboard-image-${timestamp}.png`;
+
+        // PowerShell script to save clipboard image to file
+        const psScript = `
+Add-Type -AssemblyName System.Windows.Forms
+$img = [System.Windows.Forms.Clipboard]::GetImage()
+if ($img -ne $null) {
+    $img.Save('${tempFilePath.replace(/\\/g, "\\\\")}', [System.Drawing.Imaging.ImageFormat]::Png)
+    $img.Dispose()
+    Write-Output "SUCCESS"
+} else {
+    Write-Output "NO_IMAGE"
+}
+`;
+
+        // Execute PowerShell script
+        const psResult = await new Promise<string>((resolve, reject) => {
+          exec(
+            `powershell -NoProfile -ExecutionPolicy Bypass -Command "${psScript.replace(/"/g, '\\"').replace(/\n/g, ' ')}"`,
+            { encoding: "utf8" },
+            (error, stdout, stderr) => {
+              if (error) {
+                reject(new Error(`PowerShell error: ${stderr || error.message}`));
+              } else {
+                resolve(stdout.trim());
+              }
+            }
+          );
+        });
+
+        if (psResult === "NO_IMAGE") {
+          return {
+            content: [
+              {
+                type: "text",
+                text: "No image found in clipboard. Please copy an image to clipboard first.",
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        if (psResult !== "SUCCESS") {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Unexpected clipboard result: ${psResult}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        // Read the saved temp file
+        const fileBuffer = await readFile(tempFilePath);
+
+        // Upload to Redmine
+        const response = await client.attachments.uploadFile(
+          filename,
+          fileBuffer
+        );
+
+        // Clean up temp file
+        try {
+          await unlink(tempFilePath);
+        } catch {
+          // Ignore cleanup errors
+        }
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: formatters.formatUploadResponse(response, filename),
+            },
+          ],
+          isError: false,
+        };
+      } catch (error) {
+        // Clean up temp file on error
+        try {
+          await unlink(tempFilePath);
+        } catch {
+          // Ignore cleanup errors
         }
 
         return {
