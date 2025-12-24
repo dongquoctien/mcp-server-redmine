@@ -27,6 +27,18 @@ function isImageFile(filename: string): boolean {
 }
 
 /**
+ * URL-encode a filename for Redmine textile syntax
+ * Encodes special characters like spaces so Redmine can parse the image embed
+ * @param filename Original filename
+ * @returns URL-encoded filename
+ */
+function encodeFilenameForTextile(filename: string): string {
+  // encodeURIComponent encodes all special characters including spaces
+  // This ensures filenames like "Screenshot 2025-12-22 175053.png" become "Screenshot%202025-12-22%20175053.png"
+  return encodeURIComponent(filename);
+}
+
+/**
  * Generate textile syntax to embed images at the end of text
  * @param text Original description or notes text
  * @param uploads Array of uploads to check for images
@@ -35,7 +47,7 @@ function isImageFile(filename: string): boolean {
 function appendImageEmbeds(text: string | undefined, uploads: RedmineIssueUpload[]): string {
   const imageFilenames = uploads
     .filter(u => isImageFile(u.filename))
-    .map(u => `!${u.filename}!`);
+    .map(u => `!${encodeFilenameForTextile(u.filename)}!`);
 
   if (imageFilenames.length === 0) {
     return text || '';

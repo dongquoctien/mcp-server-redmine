@@ -432,22 +432,23 @@ export function createAttachmentsHandlers(context: HandlerContext) {
           : `clipboard-image-${timestamp}.png`;
 
         // PowerShell script to save clipboard image to file
+        // Using semicolons to separate statements since the script will be executed as a single line
         const psScript = `
-Add-Type -AssemblyName System.Windows.Forms
-$img = [System.Windows.Forms.Clipboard]::GetImage()
+Add-Type -AssemblyName System.Windows.Forms;
+$img = [System.Windows.Forms.Clipboard]::GetImage();
 if ($img -ne $null) {
-    $img.Save('${tempFilePath.replace(/\\/g, "\\\\")}', [System.Drawing.Imaging.ImageFormat]::Png)
-    $img.Dispose()
-    Write-Output "SUCCESS"
+    $img.Save('${tempFilePath.replace(/\\/g, "\\\\")}', [System.Drawing.Imaging.ImageFormat]::Png);
+    $img.Dispose();
+    Write-Output 'SUCCESS'
 } else {
-    Write-Output "NO_IMAGE"
+    Write-Output 'NO_IMAGE'
 }
 `;
 
         // Execute PowerShell script
         const psResult = await new Promise<string>((resolve, reject) => {
           exec(
-            `powershell -NoProfile -ExecutionPolicy Bypass -Command "${psScript.replace(/"/g, '\\"').replace(/\n/g, ' ')}"`,
+            `powershell -NoProfile -ExecutionPolicy Bypass -Command "${psScript.replace(/\n/g, ' ')}"`,
             { encoding: "utf8" },
             (error, stdout, stderr) => {
               if (error) {
