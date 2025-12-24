@@ -41,6 +41,10 @@ Required environment variables for development and testing:
 
 This is an MCP (Model Context Protocol) server that integrates with Redmine's REST API. The server exposes Redmine functionality as MCP tools that can be called by LLMs.
 
+### Supported Resources
+
+Issues, Projects, Users, Time Entries, Attachments, Versions, Memberships, Roles, Issue Categories, Issue Statuses, Trackers, Enumerations (priorities, activities, document categories).
+
 ### Core Flow
 
 1. **Entry Point** (`src/index.ts`): Bootstraps the server via `runServer()`
@@ -74,8 +78,12 @@ This is an MCP (Model Context Protocol) server that integrates with Redmine's RE
 
 ### Testing
 
-Tests use Jest with ESM support and mock `fetch` calls. Test files are in `__tests__/` directories adjacent to the code they test.
+Tests use Jest with ESM support and mock `fetch` calls. Test files are in `__tests__/` directories adjacent to the code they test. Only GET operations are tested for data safety.
 
 - Test helpers are in `src/lib/__tests__/helpers/` (fixtures, mocks, setup)
 - Use `mockResponse()` and `mockErrorResponse()` from helpers for fetch mocking
 - Test pattern: Arrange (setup mocks) → Act (call method) → Assert (verify calls and results)
+
+### Permissions
+
+Some operations require Redmine admin privileges: `list_users`, `create_user`, `update_user`, `delete_user`. See [Redmine API Documentation](https://www.redmine.org/projects/redmine/wiki/Rest_Users) for details.
